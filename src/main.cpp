@@ -63,7 +63,9 @@ int pageUpdateCounter = 0;
 int alarmCounter = 0;
 
 uint8_t currPage = 1;
-uint8_t currPageOld;
+uint8_t currPageOld = 1;
+unsigned long timeoutPage = millis();  
+
 
 
 String readString;
@@ -794,13 +796,13 @@ void loop()
   if (btnUp.hasClicks(1)){    
     currPage++;
     if (currPage > 9) currPage = 1;
-    eeprom_update_byte(0, currPage);       
+    //eeprom_update_byte(0, currPage);       
   }
 
   if (btnUp.hasClicks(2)){    
     currPage--;
     if (currPage < 1) currPage = 9;
-    eeprom_update_byte(0, currPage);       
+    //eeprom_update_byte(0, currPage);       
   }
 
   if (btnUp.held()){
@@ -817,6 +819,11 @@ void loop()
 
         }
 
+    if (millis() > timeoutPage + 30000 && currPage != currPageOld) {
+      eeprom_update_byte(0, currPage); 
+      timeoutPage = millis();
+      currPageOld = currPage;
+    }
 
   if (currAddr != ADR_Engine)
     {
