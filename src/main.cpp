@@ -3,9 +3,9 @@
 #include "SPI.h"
 #include "EncButton.h"
 
-#define pinButton 2
-#define pinKLineTX 3
-#define pinKLineRX 4
+#define pinButton 2   // Подключаем кнопку  на пин2 и землю
+#define pinKLineTX 3  // Подключаем RX от l9637d (аналог Si9243)
+#define pinKLineRX 4  // Подключаем TX от l9637d (аналог Si9243)
 
 //WRITE TO CLUSTER
 #define FIS_WRITE_ENA 5 
@@ -765,8 +765,6 @@ void setup()
 
   attachInterrupt(digitalPinToInterrupt(pinButton), btnInterrupt, FALLING);
   
-
-
   //WRITE TO CLUSTER
   pinMode(FIS_WRITE_ENA, OUTPUT);
   digitalWrite(FIS_WRITE_ENA,LOW);
@@ -818,7 +816,8 @@ void loop()
            L100Movetmp = 0;
 
         }
-
+// не сразу записывать в память номер экрана
+// экономим ресурс флеша
     if (millis() > timeoutPage + 30000 && currPage != currPageOld) {
       eeprom_update_byte(0, currPage); 
       timeoutPage = millis();
