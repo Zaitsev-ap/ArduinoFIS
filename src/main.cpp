@@ -18,7 +18,7 @@
 
 //WRITE TO CLUSTER
 String FIS_WRITE_line1="AUDI A6 C5";
-String FIS_WRITE_line2="BILL1389";
+String FIS_WRITE_line2="Mixman";
 long FIS_WRITE_rotary_position_line1=-8;
 long FIS_WRITE_rotary_position_line2=-8;
 char FIS_WRITE_CHAR_FROM_SERIAL;
@@ -761,7 +761,7 @@ void setup()
   digitalWrite(pinKLineTX, HIGH);
   pinMode(pinButton, INPUT_PULLUP);
 
-  attachInterrupt(0, btnInterrupt, FALLING);
+  attachInterrupt(digitalPinToInterrupt(pinButton), btnInterrupt, FALLING);
   
 
 
@@ -805,8 +805,8 @@ void loop()
 
   if (btnUp.held()){
 
-        eeprom_write_dword(1,1);
-        eeprom_write_float(5,0);
+        //eeprom_write_dword(1,1);
+        //eeprom_write_float(5,0);
 
            LhourAVGtmp = 0;
           //  L100tmp = 0;
