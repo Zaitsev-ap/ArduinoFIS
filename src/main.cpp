@@ -3,6 +3,8 @@
 #include "SPI.h"
 #include "EncButton.h"
 
+#define DEBUG 1
+
 #define pinButton 2   // Подключаем кнопку  на пин2 и землю
 #define pinKLineTX 3  // Подключаем RX от l9637d (аналог Si9243)
 #define pinKLineRX 4  // Подключаем TX от l9637d (аналог Si9243)
@@ -212,8 +214,8 @@ void disconnect(){
 
 void obdWrite(uint8_t data){
 #ifdef DEBUG
-//  Serial.print("uC:");
-//  Serial.println(data, HEX);
+  Serial.print("uC:");
+  Serial.println(data, HEX);
 #endif
   obd.write(data);
 }
@@ -230,8 +232,8 @@ uint8_t obdRead(){
   }
   uint8_t data = obd.read();
 #ifdef DEBUG  
-//  Serial.print("ECU:");
-//  Serial.println(data, HEX);
+  Serial.print("ECU:");
+  Serial.println(data, HEX);
 #endif  
   return data;
 }
@@ -819,7 +821,10 @@ void loop()
 // не сразу записывать в память номер экрана
 // экономим ресурс флеша
     if (millis() > timeoutPage + 30000 && currPage != currPageOld) {
+      #ifndef DEBUG  
       eeprom_update_byte(0, currPage); 
+      #endif 
+      
       timeoutPage = millis();
       currPageOld = currPage;
     }
