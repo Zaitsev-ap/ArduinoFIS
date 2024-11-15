@@ -3,11 +3,16 @@
 #include "SPI.h"
 #include "EncButton.h"
 
-#define DEBUG 1
+// #define DEBUG  // Полный дебаг
+//#define DEBUG_RAW // смотрим сырые данные
+#define DEBUG_FIS // Что выводится на экран
+
+// #define TURBINA // Если есть ли турбина - расскоментируй
+
 
 #define pinButton 2   // Подключаем кнопку  на пин2 и землю
-#define pinKLineTX 3  // Подключаем RX от l9637d (аналог Si9243)
-#define pinKLineRX 4  // Подключаем TX от l9637d (аналог Si9243)
+#define pinKLineTX 15  // Подключаем RX от l9637d (аналог Si9243)
+#define pinKLineRX 16 // Подключаем TX от l9637d (аналог Si9243)
 
 //WRITE TO CLUSTER
 #define FIS_WRITE_ENA 5 
@@ -82,6 +87,8 @@ String turboPress;
 float turboPressMax;
 int turboPressCount = 1;
 
+int8_t fase1 = 0;
+int8_t fase2 = 0;
 int8_t ambientTemperature = 0;
 int8_t coolantTemp = 0;
 int8_t oilTemp = 0;
@@ -221,10 +228,12 @@ void obdWrite(uint8_t data){
 }
 
 uint8_t obdRead(){
-  unsigned long timeout = millis() + 1000;  
+  unsigned long timeout = millis() + 1000;  // 1000
   while (!obd.available()){
     if (millis() >= timeout) {
- //     Serial.println(F("ERROR: obdRead timeout"));
+      #ifdef DEBUG
+      Serial.println(F("ERROR: obdRead timeout"));
+      #endif
       disconnect();      
       errorTimeout++;
       return 0;
@@ -296,18 +305,24 @@ bool KWP5BaudInit(uint8_t addr){
 
 
 bool KWPSendBlock(char *s, int size){
+  #ifdef DEBUG_RAW
   Serial.print(F("---KWPSend sz="));
   Serial.print(size);
   Serial.print(F(" blockCounter="));
   Serial.println(blockCounter);    
   // show data
   Serial.print(F("OUT:"));
+  #endif
   for (int i=0; i < size; i++){    
     uint8_t data = s[i];
+    #ifdef DEBUG_RAW
     Serial.print(data, HEX);
-    Serial.print(" ");    
+    Serial.print(" ");   
+    #endif 
   }  
+  #ifdef DEBUG_RAW
   Serial.println();
+  #endif
   for (int i=0; i < size; i++){
     uint8_t data = s[i];    
     obdWrite(data);
@@ -339,10 +354,12 @@ bool KWPReceiveBlock(char s[], int maxsize, int &size){
   uint8_t data = 0;
   int recvcount = 0;
   if (size == 0) ackeachbyte = true;
+  #ifdef DEBUG_RAW
   Serial.print(F("---KWPReceive sz="));
   Serial.print(size);
   Serial.print(F(" blockCounter="));
   Serial.println(blockCounter);
+  #endif
   if (size > maxsize) {
     Serial.println("ERROR: invalid maxsize");
     return false;
@@ -393,22 +410,30 @@ bool KWPReceiveBlock(char s[], int maxsize, int &size){
     }
   }
   // show data
+  #ifdef DEBUG_RAW
   Serial.print(F("IN: sz="));  
   Serial.print(size);  
   Serial.print(F(" data="));  
+  #endif
   for (int i=0; i < size; i++){
     uint8_t data = s[i];
+    #ifdef DEBUG_RAW
     Serial.print(data, HEX);
     Serial.print(F(" "));    
+    #endif
   }  
+  #ifdef DEBUG_RAW
   Serial.println();
+  #endif
   blockCounter++;
   return true;
 }
 
 bool KWPSendAckBlock(){
+  #ifdef DEBUG_RAW
   Serial.print(F("---KWPSendAckBlock blockCounter="));
   Serial.println(blockCounter);  
+  #endif
   char buf[32];  
   sprintf(buf, "\x03%c\x09\x03", blockCounter);  
   return (KWPSendBlock(buf, 4));
@@ -416,7 +441,9 @@ bool KWPSendAckBlock(){
  
 bool readConnectBlocks(){  
   // read connect blocks
+  #ifdef DEBUG_RAW
   Serial.println(F("------readconnectblocks"));
+  #endif
 //  lcdPrint(0,0, F("KW1281 label"), 20);
   String info;  
   while (true){
@@ -435,18 +462,22 @@ bool readConnectBlocks(){
     info += text.substring(3, size-2);
     if (!KWPSendAckBlock()) return false;
   }
+  #ifdef DEBUG_RAW
   Serial.print("label=");
   Serial.println(info);
   //lcd.setCursor(0, 1);
-  //lcd.print(info);      
+  //lcd.print(info);    
+  #endif  
   return true;
 }
 
 bool connect(uint8_t addr, int baudrate){  
+  #ifdef DEBUG_RAW
   Serial.print(F("------connect addr="));
   Serial.print(addr);
   Serial.print(F(" baud="));  
   Serial.println(baudrate);  
+  #endif
  
   blockCounter = 0;  
   currAddr = 0;
@@ -493,8 +524,10 @@ bool connect(uint8_t addr, int baudrate){
 }
  
 bool readSensors(int group){
+  #ifdef DEBUG_RAW
   Serial.print(F("------readSensors "));
   Serial.println(group);
+  #endif
 //  lcdPrint(0,0, F("KW1281 sensor"), 20);  
   char s[64];
   sprintf(s, "\x04%c\x29%c\x03", blockCounter, group);
@@ -508,14 +541,17 @@ bool readSensors(int group){
     return false;
   }
   int count = (size-4) / 3;
+  #ifdef DEBUG_RAW
   Serial.print(F("count="));
   Serial.println(count);
+  #endif
   for (int idx=0; idx < count; idx++){
     byte k=s[3 + idx*3];
     byte a=s[3 + idx*3+1];
     byte b=s[3 + idx*3+2];
     String n;
     float v = 0;
+    #ifdef DEBUG_RAW
     Serial.print(F("type="));
     Serial.print(k);
     Serial.print(F("  a="));
@@ -523,6 +559,7 @@ bool readSensors(int group){
     Serial.print(F("  b="));
     Serial.print(b);
     Serial.print(F("  text="));
+    #endif
     String t = "";
     String units = "";
     char buf[32];    
@@ -635,6 +672,7 @@ bool readSensors(int group){
               case 2: vehicleSpeed =v; break;
             }              
             break;
+          #ifdef TURBINA  
           case 115:
             switch (idx){
               case 0: engineSpeed = v; break;
@@ -644,6 +682,14 @@ bool readSensors(int group){
 
             }
             break;
+           #endif 
+          case 93:
+            switch (idx){
+             // case 1: engineSpeed = v; break;
+              case 2: fase1 = v; break;
+              case 3: fase2 = v; break;
+            }
+            break; 
           default:  
             switch (idx){
               case 0: param0 = v; break;
@@ -678,6 +724,7 @@ bool readSensors(int group){
               case 3: coolantTemp = v; break;
             }
             break;
+            
          
         }
         break;
@@ -687,9 +734,10 @@ bool readSensors(int group){
      if (units.length() != 0){
       dtostrf(v,4, 2, buf); 
       t=String(buf) + " " + units;
-    }     
+    }    
+    #ifdef DEBUG_RAW 
     Serial.println(t);
-    
+    #endif
     
   }
   sensorCounter++;
@@ -903,11 +951,16 @@ void loop()
   break;
 
   case 3:
+    #ifdef TURBINA
       readSensors(115);
 
       FIS_WRITE_line1="BOOST:";
       FIS_WRITE_line2= String(turboPress);
-
+    #else
+      readSensors(93);
+      FIS_WRITE_line1="f1: "+String(fase1)+" CF";
+      FIS_WRITE_line2="f2: "+String(fase2)+" CF";  
+    #endif
   break;
   case 4:
 
@@ -929,7 +982,7 @@ void loop()
   break;
 
   case 7:
-
+    #ifdef TURBINA
       readSensors(115);
     
       if(turboPressCount>6){
@@ -944,7 +997,7 @@ void loop()
 
       FIS_WRITE_line1=String(turboPressMax);
       FIS_WRITE_line2= String(turboPress);
-
+    #endif
     break;
     case 8:
         FIS_WRITE_line1=String(vehicleSpeedAVG)+"K";
@@ -995,7 +1048,9 @@ void loop()
   //WRITE TO CLUSTER
 if (Serial.available()) {
         FIS_WRITE_CHAR_FROM_SERIAL=(char)Serial.read();
+        #ifdef DEBUG_FIS
         Serial.print(FIS_WRITE_CHAR_FROM_SERIAL);
+        #endif
         if (FIS_WRITE_CHAR_FROM_SERIAL == '\n') {
           FIS_WRITE_nl=1;
           if (FIS_WRITE_line==1){
@@ -1067,10 +1122,13 @@ if (Serial.available()) {
      } else {
        FIS_WRITE_sendline2=FIS_WRITE_line2;
      }
-      // Serial.println("refresh");
+      #ifdef DEBUG_FIS
+      //Serial.println("refresh");
+      Serial.println(" ");
       FIS_WRITE_sendTEXT(FIS_WRITE_sendline1,FIS_WRITE_sendline2);
       FIS_WRITE_last_refresh=millis();
     //end refresh
+      #endif
   }
 //END WRITE TO CLUSTER 
 
