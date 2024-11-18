@@ -305,24 +305,18 @@ bool KWP5BaudInit(uint8_t addr){
 
 
 bool KWPSendBlock(char *s, int size){
-  #ifdef DEBUG_RAW
   Serial.print(F("---KWPSend sz="));
   Serial.print(size);
   Serial.print(F(" blockCounter="));
   Serial.println(blockCounter);    
   // show data
   Serial.print(F("OUT:"));
-  #endif
   for (int i=0; i < size; i++){    
     uint8_t data = s[i];
-    #ifdef DEBUG_RAW
     Serial.print(data, HEX);
-    Serial.print(" ");   
-    #endif 
+    Serial.print(" ");    
   }  
-  #ifdef DEBUG_RAW
   Serial.println();
-  #endif
   for (int i=0; i < size; i++){
     uint8_t data = s[i];    
     obdWrite(data);
@@ -354,12 +348,10 @@ bool KWPReceiveBlock(char s[], int maxsize, int &size){
   uint8_t data = 0;
   int recvcount = 0;
   if (size == 0) ackeachbyte = true;
-  #ifdef DEBUG_RAW
   Serial.print(F("---KWPReceive sz="));
   Serial.print(size);
   Serial.print(F(" blockCounter="));
   Serial.println(blockCounter);
-  #endif
   if (size > maxsize) {
     Serial.println("ERROR: invalid maxsize");
     return false;
@@ -410,30 +402,22 @@ bool KWPReceiveBlock(char s[], int maxsize, int &size){
     }
   }
   // show data
-  #ifdef DEBUG_RAW
   Serial.print(F("IN: sz="));  
   Serial.print(size);  
   Serial.print(F(" data="));  
-  #endif
   for (int i=0; i < size; i++){
     uint8_t data = s[i];
-    #ifdef DEBUG_RAW
     Serial.print(data, HEX);
     Serial.print(F(" "));    
-    #endif
   }  
-  #ifdef DEBUG_RAW
   Serial.println();
-  #endif
   blockCounter++;
   return true;
 }
 
 bool KWPSendAckBlock(){
-  #ifdef DEBUG_RAW
   Serial.print(F("---KWPSendAckBlock blockCounter="));
   Serial.println(blockCounter);  
-  #endif
   char buf[32];  
   sprintf(buf, "\x03%c\x09\x03", blockCounter);  
   return (KWPSendBlock(buf, 4));
@@ -441,9 +425,7 @@ bool KWPSendAckBlock(){
  
 bool readConnectBlocks(){  
   // read connect blocks
-  #ifdef DEBUG_RAW
   Serial.println(F("------readconnectblocks"));
-  #endif
 //  lcdPrint(0,0, F("KW1281 label"), 20);
   String info;  
   while (true){
@@ -462,22 +444,18 @@ bool readConnectBlocks(){
     info += text.substring(3, size-2);
     if (!KWPSendAckBlock()) return false;
   }
-  #ifdef DEBUG_RAW
   Serial.print("label=");
   Serial.println(info);
   //lcd.setCursor(0, 1);
-  //lcd.print(info);    
-  #endif  
+  //lcd.print(info);      
   return true;
 }
 
 bool connect(uint8_t addr, int baudrate){  
-  #ifdef DEBUG_RAW
   Serial.print(F("------connect addr="));
   Serial.print(addr);
   Serial.print(F(" baud="));  
   Serial.println(baudrate);  
-  #endif
  
   blockCounter = 0;  
   currAddr = 0;
@@ -524,10 +502,8 @@ bool connect(uint8_t addr, int baudrate){
 }
  
 bool readSensors(int group){
-  #ifdef DEBUG_RAW
   Serial.print(F("------readSensors "));
   Serial.println(group);
-  #endif
 //  lcdPrint(0,0, F("KW1281 sensor"), 20);  
   char s[64];
   sprintf(s, "\x04%c\x29%c\x03", blockCounter, group);
@@ -541,17 +517,14 @@ bool readSensors(int group){
     return false;
   }
   int count = (size-4) / 3;
-  #ifdef DEBUG_RAW
   Serial.print(F("count="));
   Serial.println(count);
-  #endif
   for (int idx=0; idx < count; idx++){
     byte k=s[3 + idx*3];
     byte a=s[3 + idx*3+1];
     byte b=s[3 + idx*3+2];
     String n;
     float v = 0;
-    #ifdef DEBUG_RAW
     Serial.print(F("type="));
     Serial.print(k);
     Serial.print(F("  a="));
@@ -559,7 +532,6 @@ bool readSensors(int group){
     Serial.print(F("  b="));
     Serial.print(b);
     Serial.print(F("  text="));
-    #endif
     String t = "";
     String units = "";
     char buf[32];    
@@ -724,7 +696,6 @@ bool readSensors(int group){
               case 3: coolantTemp = v; break;
             }
             break;
-            
          
         }
         break;
@@ -734,10 +705,9 @@ bool readSensors(int group){
      if (units.length() != 0){
       dtostrf(v,4, 2, buf); 
       t=String(buf) + " " + units;
-    }    
-    #ifdef DEBUG_RAW 
+    }     
     Serial.println(t);
-    #endif
+    
     
   }
   sensorCounter++;
@@ -813,7 +783,8 @@ void setup()
   digitalWrite(pinKLineTX, HIGH);
   pinMode(pinButton, INPUT_PULLUP);
 
-  attachInterrupt(digitalPinToInterrupt(pinButton), btnInterrupt, FALLING);
+  //attachInterrupt(0, btnInterrupt, FALLING);
+attachInterrupt(digitalPinToInterrupt(pinButton), btnInterrupt, FALLING);
   
   //WRITE TO CLUSTER
   pinMode(FIS_WRITE_ENA, OUTPUT);
@@ -855,8 +826,8 @@ void loop()
 
   if (btnUp.held()){
 
-        //eeprom_write_dword(1,1);
-        //eeprom_write_float(5,0);
+       // eeprom_write_dword(1,1);
+       // eeprom_write_float(5,0);
 
            LhourAVGtmp = 0;
           //  L100tmp = 0;
@@ -1048,9 +1019,7 @@ void loop()
   //WRITE TO CLUSTER
 if (Serial.available()) {
         FIS_WRITE_CHAR_FROM_SERIAL=(char)Serial.read();
-        #ifdef DEBUG_FIS
         Serial.print(FIS_WRITE_CHAR_FROM_SERIAL);
-        #endif
         if (FIS_WRITE_CHAR_FROM_SERIAL == '\n') {
           FIS_WRITE_nl=1;
           if (FIS_WRITE_line==1){
@@ -1122,13 +1091,10 @@ if (Serial.available()) {
      } else {
        FIS_WRITE_sendline2=FIS_WRITE_line2;
      }
-      #ifdef DEBUG_FIS
-      //Serial.println("refresh");
-      Serial.println(" ");
+      // Serial.println("refresh");
       FIS_WRITE_sendTEXT(FIS_WRITE_sendline1,FIS_WRITE_sendline2);
       FIS_WRITE_last_refresh=millis();
     //end refresh
-      #endif
   }
 //END WRITE TO CLUSTER 
 
